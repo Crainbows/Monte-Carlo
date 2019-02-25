@@ -15,7 +15,8 @@ data.drop([1,2,3,4,5,6,7,12],inplace=True,axis=1)
 # gc
 del d
 
-@njit
+# numba function provides acceleration of predictor
+@njit(parallel=True)
 def _predict_price(time_frame, start_price, mean, stddev):
     '''numba enhanced prediction runner
     
@@ -49,36 +50,36 @@ class MonteCarlo():
         '''Add a sampleing period 
         
         Arguments:
-            days {[type]} -- [description]
-            weighting {[type]} -- [description]
+            days {int} -- Days to calculate volatility
+            weighting {int} -- Weighting of this time period
         '''
         self.weighting.append((days,weighting))
 
     def run(self, days, iterations=100):
-        '''[summary]
+        '''Run the simulation
         
         Arguments:
-            days int -- Number of days to predict
+            days {int} -- Number of days to predict
         '''
         total_weight = np.sum(self.weighting,axis=0)[1]
         prediction = np.zeros(days)
 
         for (time, weight) in self.weighting:
             returns = 1 + data.iloc[0:-days]['Close'].pct_change()
-            prediction += self.run_prediction(days, self.historical_prices[-1], iterations, returns[time:].mean(), returns[time:].std()).median(axis=1) * (weight / total_weight)
+            prediction += self.run_prediction(days, self.historical_prices[-days], iterations, returns[time:].mean(), returns[time:].std()).median(axis=1) * (weight / total_weight)
         return prediction
 
     def predict_price(self, time_frame, start_price, mean, stddev):
-        '''[summary]
+        '''Wrapper for the numba enhanced predictor
         
         Arguments:
-            time_frame {[type]} -- [description]
-            start_price {[type]} -- [description]
-            mean {[type]} -- [description]
-            stddev {[type]} -- [description]
+            time_frame {int} -- Number of days to predict
+            start_price {int} -- Starting price
+            mean {int} -- Mean of the price changes
+            stddev {int} -- Standard deviation of the price changes
         
         Returns:
-            [type] -- [description]
+            array -- Single prediction for the price
         '''
         return _predict_price(time_frame, start_price, mean, stddev)
 
