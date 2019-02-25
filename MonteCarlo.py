@@ -5,16 +5,6 @@ import pandas as pd
 import matplotlib.pyplot as plt  
 import json
 
-# Import json data
-with open('AAPL.json') as json_data:
-    d = json.load(json_data)
-
-data = pd.DataFrame(d['graph']['data'],columns=['Date',1,2,3,4,5,6,7,'Open','High','Low','Close',12])
-data.drop([1,2,3,4,5,6,7,12],inplace=True,axis=1)
-
-# gc
-del d
-
 # numba function provides acceleration of predictor
 @njit(parallel=True)
 def _predict_price(time_frame, start_price, mean, stddev):
@@ -90,12 +80,21 @@ class MonteCarlo():
         return pd.DataFrame(x)
 
 
+if __name__ == "__main__":
+    # Import json data
+    with open('AAPL.json') as json_data:
+        d = json.load(json_data)
 
+    data = pd.DataFrame(d['graph']['data'],columns=['Date',1,2,3,4,5,6,7,'Open','High','Low','Close',12])
+    data.drop([1,2,3,4,5,6,7,12],inplace=True,axis=1)
 
-mc = MonteCarlo(data['Close'].values)
-mc.set_sample_period(252, 1)
-mc.set_sample_period(127, 2)
-mc.set_sample_period(62, 4)
-plt.plot(mc.run(252,iterations=1000), 'r')
-plt.plot(data.iloc[-252:]['Close'].values)
-plt.show()
+    # gc
+    del d
+
+    mc = MonteCarlo(data['Close'].values)
+    mc.set_sample_period(252, 1)
+    mc.set_sample_period(127, 2)
+    mc.set_sample_period(62, 4)
+    plt.plot(mc.run(252,iterations=1000), 'r')
+    plt.plot(data.iloc[-252:]['Close'].values)
+    plt.show()
